@@ -1,3 +1,3 @@
-- Nom:
-- Prénom:
-- URL vercel: 
+- Nom : Verguet-Bailly 
+- Prénom : Matias
+- URL netlify : https://verguet-bailly-astro.netlify.app
