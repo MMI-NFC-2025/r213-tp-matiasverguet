@@ -1,0 +1,31 @@
+---
+const { nomMaison, adresse, prix, surface, nbChambres, nbSdb, favori } = Astro.props;
+---
+
+<div class="card">
+    <h2>{nomMaison}</h2>
+    <p>{adresse}</p>
+    <p>Prix: {prix}€/mois</p>
+    <p>Surface: {surface}m² - {nbChambres} chambres - {nbSdb} sdb</p>
+    {favori && <span>⭐ Favori</span>}
+</div>
+
+<style>
+    .card {
+        border: 1px solid #ddd;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .card h2 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.5rem;
+    }
+    
+    .card p {
+        margin: 0.25rem 0;
+        color: #333;
+    }
+</style>
