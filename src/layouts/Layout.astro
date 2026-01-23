@@ -1,5 +1,6 @@
 ---
 import Header from '../components/header.astro';
+import Footer from '../components/Footer.astro';
 
 const { titre } = Astro.props;
 ---
@@ -16,5 +17,24 @@ const { titre } = Astro.props;
         <main>
             <slot />
         </main>
+        <Footer/>
     </body>
 </html>
+
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+    
+    main {
+        text-align: left;
+        padding: 2rem;
+    }
+    
+    main h1 {
+        font-size: 3rem;    
+        margin-top: 5rem;
+        margin-bottom: 2rem;
+    }
+</style>   
