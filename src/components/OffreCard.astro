@@ -1,0 +1,91 @@
+---
+import PbImage from "./PbImage.astro";
+
+interface Props {
+    offre: any;
+}
+
+const { offre } = Astro.props;
+const { nom_maison, adresse, nb_Chambres, nb_Sdb, surface, prix, favori, images } =
+    offre;
+---
+
+<div
+    class="offre bg-white shadow-md rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200"
+    data-favori={favori?.toString()}
+>
+    {
+        images && images.length > 0 && (
+            <div class="w-full h-48 overflow-hidden">
+                <PbImage record={offre} recordImage={images[0]} />
+            </div>
+        )
+    }
+    <div class="p-6">
+        <div class="flex justify-between items-start mb-3">
+            <h2 class="text-xl font-bold text-gray-800">
+                {nom_maison}
+            </h2>
+        </div>
+        <div class="flex items-center gap-4 mt-4 text-sm text-gray-700">
+
+        </div>
+        <div
+            class="flex justify-between items-center mt-4 pt-4 border-t border-gray-200"
+        >
+            <p class="text-2xl font-bold text-blue-600">
+                {prix}€<span class="text-sm text-gray-500">/mois</span>
+            </p>
+            <button
+                class="favori-btn px-4 py-2 ml-4 rounded-lg text-base font-semibold transition-all duration-300 hover:scale-110"
+                aria-label="Marquer comme favori"
+            >
+                Favori
+            </button>
+        </div>
+    </div>
+</div>
+---
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const cards = document.querySelectorAll(".offre");
+
+        cards.forEach((card) => {
+            const button = card.querySelector(".favori-btn");
+            if (!button) return;
+
+            const isFavori = card.getAttribute("data-favori") === "true";
+
+            // Définir l'état initial
+            if (isFavori) {
+                card.classList.add("bg-yellow-50", "border-yellow-300");
+                card.classList.remove("bg-white");
+                button.classList.add("bg-red-500", "text-white");
+            } else {
+                button.classList.add("bg-gray-200", "text-gray-600");
+            }
+
+            // Gérer le clic sur le bouton
+            button.addEventListener("click", () => {
+                const currentFavori =
+                    card.getAttribute("data-favori") === "true";
+
+                if (currentFavori) {
+                    // Retirer des favoris
+                    card.setAttribute("data-favori", "false");
+                    card.classList.remove("bg-yellow-50", "border-yellow-300");
+                    card.classList.add("bg-white");
+                    button.classList.remove("bg-red-500", "text-white");
+                    button.classList.add("bg-gray-200", "text-gray-600");
+                } else {
+                    // Ajouter aux favoris
+                    card.setAttribute("data-favori", "true");
+                    card.classList.add("bg-yellow-50", "border-yellow-300");
+                    card.classList.remove("bg-white");
+                    button.classList.remove("bg-gray-200", "text-gray-600");
+                    button.classList.add("bg-red-500", "text-white");
+                }
+            });
+        });
+    });
+</script>
