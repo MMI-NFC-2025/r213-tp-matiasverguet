@@ -1,0 +1,26 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getOffre } from "../../backend.mjs";
+
+const { id } = Astro.params;
+const offre = await getOffre(id);
+---
+
+<Layout titre={offre ? offre.nom_maison || 'Offre' : 'Offre introuvable'}>
+    {offre ? (
+        <article class="max-w-3xl mx-auto bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold mb-4">{offre.nom_maison}</h1>
+            <div class="mb-4">
+                <strong>Adresse:</strong> {offre.adresse || '—'}
+            </div>
+            <ul class="list-disc pl-5 space-y-2 text-gray-700">
+                <li><strong>Prix:</strong> {offre.prix} &euro; / mois</li>
+                <li><strong>Surface:</strong> {offre.surface || '—'}</li>
+                <li><strong>Pièces:</strong> {offre.pieces || '—'}</li>
+                <li><strong>Description:</strong> {offre.description || 'Aucune description'}</li>
+            </ul>
+        </article>
+    ) : (
+        <div class="text-center p-8">Offre introuvable pour l'id {id}</div>
+    )}
+</Layout>

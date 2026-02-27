@@ -7,17 +7,19 @@ const {
     height = 300,
 } = Astro.props;
 
-const imageURL = recordImage ? await getImageUrl(record, recordImage) : null;
+const imageURL = await getImageUrl(record, recordImage);
+
 ---
 
 {
-    imageURL &&(
+    imageURL && (
         <img
             src={imageURL}
             alt={record.nomMaison || 'Image'}
-             width={width}
+            width={width}
             height={height}
-            style="object-fit:cover;border-radius:6px;max-width:100%;"
+            class="w-full h-full object-cover block"
+            style="max-width:100%;"
         />
     )
 }

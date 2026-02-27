@@ -1,0 +1,38 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { getOffres } from "../../../backend.mjs";
+import PbImage from "../../../components/PbImage.astro";
+
+const { surface } = Astro.params;
+const minSurface = Number(surface) || 0;
+const offres = await getOffres();
+const filtered = offres.filter((o) => Number(o.surface) > minSurface);
+---
+
+<Layout titre={`Maisons > ${minSurface} m²`}>
+    <h1 class="text-2xl font-bold mb-4">Maisons supérieures à {minSurface} m²</h1>
+
+    {filtered.length === 0 ? (
+        <p>Aucune maison trouvée avec une surface supérieure à {minSurface} m².</p>
+    ) : (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((offre) => (
+                <div>
+                    <a href={`/offres/${offre.id}`} class="block">
+                        <article class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="w-full h-40 overflow-hidden">
+                                {offre.image && offre.image.length > 0 && (
+                                    <PbImage record={offre} recordImage={offre.image} width={600} height={240} />
+                                )}
+                            </div>
+                            <div class="p-4">
+                                <h2 class="font-bold">{offre.nomMaison}</h2>
+                                <p class="text-sm text-gray-600">{offre.surface || '—'} m² — {offre.prix} &euro;</p>
+                            </div>
+                        </article>
+                    </a>
+                </div>
+            ))}
+        </div>
+    )}
+</Layout>

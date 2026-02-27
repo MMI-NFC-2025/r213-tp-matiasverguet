@@ -1,0 +1,80 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import OffreCard from "../../components/OffreCard.astro";
+import { getOffres } from "../../backend.mjs";
+
+let message = '';
+let offres = [];
+if (Astro.request.method === "POST") {
+    const data = await Astro.request.formData();
+    const minPrix = parseInt(data.get("minPrix"));
+    const maxPrix = parseInt(data.get("maxPrix"));
+
+    if (minPrix > 0 && maxPrix > 0 && maxPrix > minPrix) {
+        const all = await getOffres();
+        offres = all.filter((o) => {
+            const p = Number(o.prix);
+            return !isNaN(p) && p >= minPrix && p <= maxPrix;
+        });
+        if (offres.length === 0) {
+            message = `Pas d'offres entre ${minPrix}€ et ${maxPrix}€`;
+        } else {
+            message = `Liste des offres entre ${minPrix}€ et ${maxPrix}€`;
+        }
+    } else {
+        message = "Veuillez entrer des valeurs valides pour le prix.";
+        offres = await getOffres();
+    }
+} else {
+    offres = await getOffres();
+}
+---
+
+
+<Layout titre="Offres">
+    <h1 class="text-3xl font-bold mb-6">Offres</h1>
+    <form action="/offres" method="POST" class="flex flex-col sm:flex-row items-center gap-3 mb-6">
+        <input type="number" name="minPrix" placeholder="Prix minimum" class="w-full sm:w-44 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        <input type="number" name="maxPrix" placeholder="Prix maximum" class="w-full sm:w-44 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">Filtrer par prix</button>
+    </form>
+
+
+    <div class="container mx-auto px-4">
+            <div class="flex items-center gap-2 mb-4">
+            <button
+                id="favori-button"
+                class="bg-slate-600 rounded-lg text-white p-2 hover:bg-slate-700 transition-colors"
+            >
+                Afficher les favoris
+            </button>
+            <a href="/offres/surface/80" class="bg-slate-600 rounded-lg text-white p-2 hover:bg-slate-700 transition-colors">Maisons &gt; 80 m&sup2;</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {offres.map((offre) => <OffreCard offre={offre} />)}
+        </div>
+    </div>
+</Layout>
+
+
+<script>
+    const button = document.getElementById("favori-button");
+    let showOnlyFavorites = false;
+
+    button?.addEventListener("click", () => {
+        showOnlyFavorites = !showOnlyFavorites;
+        const offres = document.querySelectorAll<HTMLElement>(".offre");
+
+        offres.forEach((offre) => {
+            const isFavori = offre.dataset.favori === "true";
+
+            if (showOnlyFavorites) {
+                offre.style.display = isFavori ? "block" : "none";
+                button.textContent = "Afficher tout";
+            } else {
+                offre.style.display = "block";
+                button.textContent = "Afficher les favoris";
+            }
+        });
+    });
+</script>
