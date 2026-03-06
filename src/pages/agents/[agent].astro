@@ -1,0 +1,75 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import OffreCard from "../../components/OffreCard.astro";
+import { getOffres, getAgent } from "../../backend.mjs";
+
+const { params } = Astro;
+const all = await getOffres();
+
+function slugify(name) {
+    return encodeURIComponent(String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+}
+
+const param = params.agent;
+
+// Determine if param is an agent id (15 chars) or a slug/unknown key
+let offres = [];
+let agentName = decodeURIComponent(param);
+
+if (/^[a-z0-9]{15}$/.test(param)) {
+    // filter offers that reference this agent id OR that contain the agent's email
+    const agentRec = await getAgent(param).catch(() => null);
+    let agentEmails = [];
+    if (agentRec && agentRec.email) agentEmails.push(String(agentRec.email).toLowerCase());
+
+    offres = all.filter(o => {
+        const agentField = o.agent ?? o.Agent ?? o.AgentEmail ?? o.agentEmail ?? null;
+        if (!agentField) return false;
+        if (typeof agentField === 'string') {
+            if (/^[a-z0-9]{15}$/.test(agentField) && agentField === param) return true;
+            if (agentEmails.length && agentEmails.includes(agentField.toLowerCase())) return true;
+            return false;
+        }
+        if (typeof agentField === 'object' && agentField.id) {
+            return agentField.id === param;
+        }
+        return false;
+    });
+    if (agentRec) {
+        agentName = agentRec.Nom || agentRec.nom || agentRec.name || `${agentRec.prenom || ''} ${agentRec.Nom || ''}`.trim() || agentRec.id;
+    }
+} else if (param === 'unknown') {
+    offres = all;
+    agentName = 'Inconnu';
+} else {
+    // param is a slug; try to match by slugified names or by email string slug
+    offres = all.filter(o => {
+        const agentField = o.agent ?? o.Agent ?? o.AgentEmail ?? o.agentEmail ?? o.auteur ?? null;
+        if (!agentField) return false;
+        if (typeof agentField === 'string') return slugify(agentField) === param;
+        if (typeof agentField === 'object' && agentField.id) return slugify(agentField.id) === param;
+        return false;
+    });
+}
+---
+
+<Layout titre={`Offres de ${agentName}`}>
+    <div class="mb-6">
+        <a href="/agents" class="text-sm text-blue-600 hover:underline">Voir la liste des agents</a>
+    </div>
+
+    <h1 class="text-3xl font-bold mb-6">Offres de {agentName}</h1>
+
+    {offres.length === 0 ? (
+        <>
+            <p>Aucune offre trouvée pour cet agent. Voici toutes les offres :</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                {all.map(o => <OffreCard offre={o} />)}
+            </div>
+        </>
+    ) : (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {offres.map(o => <OffreCard offre={o} />)}
+        </div>
+    )}
+</Layout>

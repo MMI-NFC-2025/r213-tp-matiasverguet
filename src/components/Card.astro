@@ -6,9 +6,47 @@ import PbImage from "./PbImage.astro";
 <div class="card">
     <PbImage record={offre} recordImage={offre.images?.[0]} width={400} height={300} />
 
+    <button class="favoriteButton absolute bottom-0 left-0 p-2 text-white rounded-br-lg" data-offre={JSON.stringify(offre)}>
+        <img id="favorite-icon" src={offre.favori ? "/favorite_filled.png" : "/favorite.png"} alt="Favorite Icon" class="w-6 h-6" />
+    </button>
+
     <p>{offre.nomMaison}</p>
 
     <a href={`/offres/${offre.id}`} class="text-sm text-blue-600 hover:underline">Voir plus</a>
 
     {offre.favori && <span class="favori">★ Favori </span>}
 </div>
+
+<script>
+    //@ts-nocheck
+    const favoriteButtons = document.querySelectorAll(".favoriteButton");
+
+    favoriteButtons.forEach(button => {
+        button.addEventListener('click', async () => {
+            const offreData = JSON.parse(button.dataset.offre || '{}');
+            const newFavori = !offreData.favori;
+
+            // optimistic UI
+            const favIcon = button.querySelector('#favorite-icon');
+            if (favIcon) {
+                favIcon.src = newFavori ? "/favorite_filled.png" : "/favorite.png";
+            }
+            offreData.favori = newFavori;
+            button.dataset.offre = JSON.stringify(offreData);
+
+            try {
+                await fetch('/api/setFavori', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: offreData.id, favori: newFavori })
+                });
+            } catch (err) {
+                // rollback on error
+                const rollback = !newFavori;
+                if (favIcon) favIcon.src = rollback ? "/favorite_filled.png" : "/favorite.png";
+                offreData.favori = rollback;
+                button.dataset.offre = JSON.stringify(offreData);
+            }
+        });
+    });
+</script>

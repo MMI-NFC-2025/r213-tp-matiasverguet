@@ -1,0 +1,108 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import OffreCard from "../../components/OffreCard.astro";
+import { getOffres, getAgent, getAgents } from "../../backend.mjs";
+
+const offres = await getOffres();
+
+function slugify(name) {
+    return encodeURIComponent(String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+}
+
+// Build agents map keyed by agent id when possible, otherwise by slugified name.
+const agentsMap = new Map();
+// preload agent records to match by email when Maisons use email strings
+const agentRecords = await getAgents();
+const agentByEmail = new Map();
+for (const a of agentRecords) {
+    if (a.email) agentByEmail.set(String(a.email).toLowerCase(), a);
+}
+
+for (const o of offres) {
+    let key = null;
+    let name = null;
+
+    // check several possible fields used in the Maisons collection
+    const agentField = o.agent ?? o.Agent ?? o.AgentEmail ?? o.agentEmail ?? null;
+
+    if (agentField && typeof agentField === 'string' && /^[a-z0-9]{15}$/.test(agentField)) {
+        const agentRec = await getAgent(agentField).catch(() => null);
+        if (agentRec) {
+            key = agentRec.id;
+            name = agentRec.Nom || agentRec.nom || agentRec.name || `${agentRec.prenom || ''} ${agentRec.Nom || ''}`.trim() || agentRec.id;
+            var email = agentRec.email || null;
+        } else {
+            key = agentField;
+            name = 'Inconnu';
+        }
+    } else if (agentField && typeof agentField === 'object' && agentField.id) {
+        key = agentField.id;
+        name = agentField.Nom || agentField.nom || agentField.name || `${agentField.prenom || ''} ${agentField.Nom || ''}`.trim() || agentField.id;
+        var email = agentField.email || null;
+    } else if (agentField && typeof agentField === 'string' && agentField.includes('@')) {
+        // agent stored as email string -> try to match Agent by email
+        const aRec = agentByEmail.get(agentField.toLowerCase());
+        if (aRec) {
+            key = aRec.id;
+            name = aRec.Nom || aRec.nom || aRec.name || `${aRec.prenom || ''} ${aRec.Nom || ''}`.trim() || aRec.id;
+            var email = aRec.email || null;
+        } else {
+            name = agentField;
+            key = slugify(agentField);
+            var email = agentField;
+        }
+    } else if (o.auteur) {
+        name = String(o.auteur);
+        key = slugify(name);
+    } else {
+        name = 'Inconnu';
+        key = 'unknown';
+    }
+
+    if (!agentsMap.has(key)) agentsMap.set(key, { name, key, count: 0, email: email || null });
+    else if (email && !agentsMap.get(key).email) agentsMap.get(key).email = email;
+    agentsMap.get(key).count++;
+}
+
+// Also include any Agent records that exist in PocketBase even if they have 0 offers
+for (const a of agentRecords) {
+    if (!agentsMap.has(a.id)) {
+        const name = a.Nom || a.nom || a.name || `${a.prenom || ''} ${a.Nom || ''}`.trim() || a.id;
+        agentsMap.set(a.id, { name, key: a.id, count: 0, email: a.email || null });
+    }
+}
+
+const agents = Array.from(agentsMap.values());
+---
+
+<Layout titre="Agents">
+    <h1 class="text-3xl font-bold mb-6">Agents</h1>
+
+    {agents.length === 0 ? (
+        <p>Aucun agent trouvé.</p>
+    ) : (
+        // If all agents are unknown, show a helpful message and list all offres
+                (agents.length === 1 && agents[0].name === 'Inconnu') ? (
+            <>
+                <p class="mb-4">Aucun champ "agent" n'a été trouvé dans les offres. Voici toutes les offres disponibles :</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {offres.map(o => <OffreCard offre={o} />)}
+                </div>
+            </>
+        ) : (
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {agents.map(a => (
+                    <a href={`/agents/${a.key}`} class="block bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-lg font-semibold">{a.name}</div>
+                                {a.email && <div class="text-sm text-gray-600">{a.email}</div>}
+                            </div>
+                            <div class="text-sm text-gray-500">{a.count} offre{a.count > 1 ? 's' : ''}</div>
+                        </div>
+                    </a>
+                ))}
+            </div>
+        )
+    )}
+</Layout>

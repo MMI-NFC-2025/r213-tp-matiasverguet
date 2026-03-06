@@ -1,6 +1,8 @@
 ---
-import { addOffre } from '../../backend.mjs';
+import { addOffre, getAgents } from '../../backend.mjs';
 let message = '';
+const agents = await getAgents();
+
 if (Astro.request.method === "POST") {
     const formData = await Astro.request.formData();
     const response = await addOffre(formData);
@@ -16,6 +18,14 @@ if (Astro.request.method === "POST") {
     <input type="number" name="nbSdb" placeholder="Nombre de salles de bain"  />
     <input type="number" name="nbChambres" placeholder="Nombre de chambres"  />
     <input type="number" name="surface" placeholder="Superficie"  />
+    <label class="block mt-3">Agent</label>
+    <select name="agent" class="w-full mt-2 p-2 border border-gray-300 rounded-md">
+        <option value="">-- Aucun --</option>
+        {agents.map(a => (
+            <option value={a.id}>{a.Nom || a.nom || a.name || `${a.prenom || ''} ${a.Nom || ''}`.trim()}</option>
+        ))}
+    </select>
+
     <input type="file" name="image"  />
     <button type="submit">Ajouter</button>
 </form>

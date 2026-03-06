@@ -51,3 +51,23 @@ export async function addOffre(house) {
         };
     }
 }
+
+export async function getAgent(id) {
+    try {
+        const data = await db.collection('Agent').getOne(id);
+        return data;
+    } catch (err) {
+        // collection or record may not exist
+        return null;
+    }
+}
+
+export async function getAgents() {
+    try {
+        const list = await db.collection('Agent').getFullList({ sort: '-created' });
+        return list;
+    } catch (err) {
+        console.error('getAgents error', err);
+        return [];
+    }
+}

@@ -39,6 +39,7 @@ const { offre } = Astro.props;
             <button
                 class="favori-btn px-4 py-2 ml-4 rounded-lg text-base font-semibold transition-all duration-300 hover:scale-110"
                 aria-label="Marquer comme favori"
+                data-offre={JSON.stringify(offre)}
             >
                 {offre.favori ? "Retirer des favoris" : "Ajouter aux favoris"}
             </button>
@@ -70,26 +71,45 @@ const { offre } = Astro.props;
                 }
             }
 
-            // Gérer le clic sur le bouton — ne modifie que le bouton et l'attribut data-favori
-            button.addEventListener("click", () => {
+            // Gérer le clic sur le bouton — met à jour le serveur puis l'UI
+            button.addEventListener("click", async () => {
                 const currentFavori = card.getAttribute("data-favori") === "true";
+                const offreData = JSON.parse(button.getAttribute('data-offre') || '{}');
 
-                if (currentFavori) {
-                    // Retirer des favoris
-                    card.setAttribute("data-favori", "false");
-                    button.classList.remove("bg-red-500", "text-white");
-                    button.classList.add("bg-gray-200", "text-gray-600");
-                    if (button.tagName.toLowerCase() === 'button' && button.textContent.trim().length > 1) {
-                        button.textContent = 'Ajouter aux favoris';
-                    }
-                } else {
-                    // Ajouter aux favoris
-                    card.setAttribute("data-favori", "true");
+                // optimistically update UI
+                const newFavori = !currentFavori;
+                card.setAttribute("data-favori", newFavori ? "true" : "false");
+                if (newFavori) {
                     button.classList.remove("bg-gray-200", "text-gray-600");
                     button.classList.add("bg-red-500", "text-white");
                     if (button.tagName.toLowerCase() === 'button' && button.textContent.trim().length > 1) {
                         button.textContent = 'Retirer des favoris';
                     }
+                } else {
+                    button.classList.remove("bg-red-500", "text-white");
+                    button.classList.add("bg-gray-200", "text-gray-600");
+                    if (button.tagName.toLowerCase() === 'button' && button.textContent.trim().length > 1) {
+                        button.textContent = 'Ajouter aux favoris';
+                    }
+                }
+
+                // call server API to persist
+                try {
+                    const res = await fetch('/api/setFavori', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: offreData.id, favori: newFavori })
+                    });
+                    const json = await res.json();
+                    if (!json.success) {
+                        // rollback UI on error
+                        const rollback = !newFavori;
+                        card.setAttribute("data-favori", rollback ? "true" : "false");
+                    }
+                } catch (err) {
+                    // network error: rollback
+                    const rollback = !newFavori;
+                    card.setAttribute("data-favori", rollback ? "true" : "false");
                 }
             });
         });
